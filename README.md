@@ -5,9 +5,8 @@ Solutions will be uploaded after the masterclass.
 
 [Slides](webdata_slides.pdf)
 
-1. [Worksheet: APIs](4_API.Rmd)
-2. [Worksheet: HTML](4_API.Rmd)
-3. [Worksheet: Introduction](1_intro.Rmd)
-4. [Worksheet: Web scraping basics](2_basicWebScraping.Rmd)
-5. [Worksheet: Advanced web scraping](3_advancedWebScraping.Rmd)
+1. [Worksheet: APIs](1_API.Rmd)
+2. [Worksheet: HTML](2_API.Rmd)
+3. [Worksheet: Web scraping basics](4_basicWebScraping.Rmd)
+4. [Worksheet: Advanced web scraping](4_advancedWebScraping.Rmd)
 
