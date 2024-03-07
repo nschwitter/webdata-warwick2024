@@ -1,0 +1,127 @@
+---
+title: "APIs (with solutions)"
+author: Nicole Schwitter
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: yes
+    toc_float: true
+    toc_collapsed: true
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R Markdown
+
+We will be using the integrated development environment [RStudio](https://www.rstudio.com/) to interact with R, and I wrote our annotated R code using [Markdown](http://rmarkdown.rstudio.com). **Markdown** is a simple formatting syntax to generate HTML, PDF, or Word documents. You can combine it with R to generate a document that includes comments, code, and the the output of the code. To generate the document, just click the **Knit** button in the menu at the top. 
+
+R code is embedded in chunks like this one:
+```{r}
+1+1
+result <- 1+1+1
+print(result)
+summary(cars)
+```
+
+Chunks can be executed separately by using the little green arrow. 
+
+# Packages and Prerequisites
+
+If you have not done so, please install all the following packages by calling the following chunk:
+
+```{r, eval=FALSE}
+install.packages("httr")
+install.packages("jsonlite")
+install.packages("dplyr")
+
+install.packages("rvest")
+install.packages("RSelenium")
+```
+
+We will be using `httr` and `jsonlite` to send API queries to servers. `dplyr` helps with data manipulation. Later on, we will be using `rvest` and `RSelenium` for web scraping. 
+
+
+# Using an API
+
+In this section, we will have a look into using APIs. We will be accessing the Library of Congress via its API. We use the Library of Congress / Chronicling America because its API does not require a sign-up or any sort of authentication, so it works well as an example. 
+
+Making API calls can be fiddly. For many different APIs, R packages exist which makes accessing them easier and user-friendlier. We will make direct calls to the API as this approach always works and does not depend on specific packages.
+
+How to access the Chronicling America API is explained [in its documentation](https://chroniclingamerica.loc.gov/about/api/). To make calls to the API, we need the `httr` package. With this package, we can make HTTP requests. We will also use the package `jsonlite`. Servers usually send their answers in the data exchange format JSON. `jsonlite` allows a smooth conversion between JSON data and R objects. We also load `dplyr` for data manipulation tasks. 
+
+
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+```
+
+## Using the Chronicling America / Library of Congress API
+
+An API call includes the base API URL and the query. In some cases, it also includes an API key. A key is not required when working with the Chronicling America API.
+
+The API endpoint for Chronicling America is `https://chroniclingamerica.loc.gov/search/`. We assign this URL to the element `endpoint` and add `pages/results/` as we want to retrieve page results (see documentation). 
+
+```{r}
+endpoint <- "https://chroniclingamerica.loc.gov/search/pages/results/"
+```
+
+In the following, we want to retrieve newspaper pages which mention the word "computer". How can we do that? A look at the [documentation](https://chroniclingamerica.loc.gov/about/api/) helps. Working with an API means mainly one thing: reading its documentation. We will be using OpenSearch to search newspaper pages. 
+
+The documentation already tells us what a call should look like. We will try to retrieve newspaper pages containing the word "computer". We can also specify a specific date range we are interested in (1950 - 1960) and restrict our call to a specific state (Alabama).  We further specify that we want the answer to be in the format json.
+Combining the endpoint with our query, we can also take a look at what the browser [would return with such a request](https://chroniclingamerica.loc.gov/search/pages/results/?andtext=computer&state=Alabama&date1=1950&date2=1960&dateFilterType=yearRange). We use R to send the request. 
+
+```{r}
+term = "computer"
+response <- GET(paste0(endpoint, "?andtext=", term, "&state=Alabama&date1=1950&date2=1960&dateFilterType=yearRange&format=json"))
+glimpse(response)
+```
+
+We get a response to our call! The response includes a lot of information that we do not need if we are just interested in newspaper articles. We do not need to know what cookies were used or the specific type of request we sent. We are only interested in the content of the response, so this is what we extract in the following chunk. 
+
+```{r}
+newspaperdata <- response$content
+head(newspaperdata)
+```
+
+This is information about newspaper pages containing the word "computer"! Apparently. What we have retrieved are raw bytes. This is insightful for the computer, but not for us. We have to convert the raw vectors to something humans understand; this is what the function `rawToChar()` can do.   
+
+```{r}
+newspaperdata<- rawToChar(response$content)
+glimpse(newspaperdata)
+```
+
+Better! But still, this is not exactly a great format. As we have requested the API to send us data in the JSON format, we can now convert the response into an R object using `fromJSON()` from the `jsonlite` package. This call will create a list. An easier object to work with is a data frame, so we will transform the list to a data frame using `as.data.frame()`.
+
+```{r}
+newspaperdata <- as.data.frame(fromJSON(rawToChar(response$content)))
+```
+
+We now have newspaper page data which contain the word "computer"! We have nine rows (as there are nine results) and several columns in the data frame. We can have a look at the digitised full text which is saved in the column `items.ocr_eng`:
+
+```{r}
+glimpse(newspaperdata$items.ocr_eng)
+newspaperdata$items.ocr_eng[1]
+```
+
+We can now read a 1957 newspaper article which contains the word computer. We could analyse this text further and study how newspapers reported about computers in Alabama between 1950 and 1960. The Chronicling America API gives us insight into historical news and we could next loop over states and years. Using the API and this database, we could for example track the sentiment of reports about computers over time, study differences between states and publishing house, and much more. 
+
+Working with APIs can be a bit intimidating and each API is different. However, they offer a straight-forward and structured way to access a platform's data. Your best friend is their documentation. Heads-up: These can also be intimidating. They are generally not written for social scientists wanting to collect data for research purposes. For many APIs, user-friendly wrapper packages exist, so it helps to look these up when you start working with a new API. 
+
+
+# API Exercises
+
+1. Collect all 94 newspaper page results from the state Michigan which contain the word "computer" and which were published between 1950 and 1960. 
+2. What are other internet platforms you are interested in? Find out whether they have an API, what kind of data data the API offers, and how you can access the API. 
+
+
+```{r}
+# SOLUTION
+state = "Michigan"
+term = "computer"
+response <- GET(paste0(endpoint, "?andtext=", term, "&state=", state, "&date1=1950&date2=1960&dateFilterType=yearRange&rows=100&format=json"))
+```
